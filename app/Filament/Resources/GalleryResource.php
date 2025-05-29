@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\GalleryResource\Pages;
 use App\Filament\Resources\GalleryResource\RelationManagers;
-use App\Models\Gallery; // Penting: Pastikan ini mengarah ke model Gallery Anda
+use App\Models\Gallery;
 use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
@@ -12,24 +12,23 @@ use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Resources\Resource;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary; // <-- Tambahkan ini untuk menggunakan Facade Cloudinary
-use Illuminate\Support\Facades\Log; // <-- Tambahkan ini untuk logging
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile; // <-- Tambahkan ini untuk tipe hint yang jelas
+// Hapus CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Support\Facades\Log;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Illuminate\Support\Facades\Storage; // Tetap ada jika Anda menggunakannya untuk hal lain
+
+// Tambahkan library HTTP client seperti Guzzle untuk melakukan request ke Filestack API
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException; // Untuk menangani exception dari Guzzle
 
 class GalleryResource extends Resource
 {
-    // Mengatur model yang akan digunakan oleh resource ini
     protected static ?string $model = Gallery::class;
-
-    // Mengatur ikon navigasi yang akan muncul di sidebar admin Filament
-    protected static ?string $navigationIcon = 'heroicon-o-photo'; // Anda bisa ganti ikon ini
-
-    // Mengatur label singular dan plural untuk navigasi
+    protected static ?string $navigationIcon = 'heroicon-o-photo';
     protected static ?string $navigationLabel = 'Galeri Foto';
     protected static ?string $pluralModelLabel = 'Galeri Foto';
     protected static ?string $modelLabel = 'Foto Galeri';
 
-    // Definisi skema formulir untuk membuat atau mengedit item galeri
     public static function form(Forms\Form $form): Forms\Form
     {
         return $form
@@ -40,81 +39,100 @@ class GalleryResource extends Resource
                     ->nullable()
                     ->placeholder('Contoh: Pembangunan Gedung A'),
 
-                // Gambar Galeri - Menggunakan saveUploadedFileUsing untuk Cloudinary
                 FileUpload::make('image')
                     ->label('Gambar Galeri')
-                    ->image() // Hanya menerima file gambar
-                    ->required() // Wajib diisi
-                    ->imageEditor() // Memungkinkan pengeditan gambar
-                    ->columnSpanFull() // Mengambil lebar penuh kolom formulir
+                    ->image()
+                    ->required()
+                    ->imageEditor()
+                    ->columnSpanFull()
                     ->saveUploadedFileUsing(function (Forms\Components\FileUpload $component, TemporaryUploadedFile $file): ?string {
-                        // Pastikan file sementara ada sebelum diproses
+                        Log::info('Livewire temp file details for Filestack. Path: ' . $file->getRealPath() . ' | Size: ' . $file->getSize() . ' | Original Name: ' . $file->getClientOriginalName());
+
                         if (!$file->exists()) {
-                            Log::error('Temporary file for Gallery upload does not exist: ' . $file->getFilename());
-                            throw new \Exception('Temporary file not found for upload.');
+                            Log::error('Temporary file for Gallery upload does not exist: ' . $file->getRealPath());
+                            throw new \Exception('File sementara tidak ditemukan untuk diunggah ke Filestack.');
                         }
 
                         try {
-                            // Dapatkan path fisik dari file sementara
-                            $realPath = $file->getRealPath();
-                            if (!$realPath) {
-                                Log::error('Temporary file has no real path for Gallery upload: ' . $file->getFilename());
-                                throw new \Exception('Temporary file has no real path.');
+                            $filestackApiKey = config('filestack.api_key');
+
+                            if (empty($filestackApiKey)) {
+                                Log::error('Filestack API Key is missing in config/filestack.php or .env. Please set FILESTACK_API_KEY.');
+                                throw new \Exception('Filestack API Key tidak ditemukan. Pastikan sudah diatur di .env dan config/filestack.php.');
                             }
 
-                            $options = [
-                                'folder' => 'company-profile/gallery', // Tentukan folder di Cloudinary
-                                'public_id' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) . '_' . uniqid(), // Nama file unik
-                            ];
+                            $client = new Client([
+                                'base_uri' => 'https://www.filestackapi.com/',
+                                'timeout' => 30.0, // Timeout dalam detik
+                            ]);
 
-                            // Logging sebelum upload ke Cloudinary
-                            Log::info('Attempting Cloudinary upload for Gallery file: ' . $file->getClientOriginalName() . ' from path: ' . $realPath);
+                            // Log sebelum unggah ke Filestack
+                            Log::info('Attempting Filestack upload for Gallery file: ' . $file->getClientOriginalName() . ' with size: ' . $file->getSize() . ' bytes.');
 
-                            // Lakukan proses upload ke Cloudinary
-                            $uploadedFile = Cloudinary::upload($realPath, $options);
+                            // Lakukan request POST ke Filestack upload API
+                            $response = $client->request('POST', 'api/store/S3', [
+                                'query' => [
+                                    'key' => $filestackApiKey,
+                                    // Anda bisa menambahkan parameter lain seperti 'path', 'filename', dll.
+                                    // 'path' => '/my_app_gallery/' . date('Y-m-d') . '/',
+                                    // 'filename' => $file->getClientOriginalName(),
+                                ],
+                                'multipart' => [
+                                    [
+                                        'name' => 'fileUpload', // Nama field untuk file
+                                        'contents' => fopen($file->getRealPath(), 'r'),
+                                        'filename' => $file->getClientOriginalName(),
+                                    ],
+                                ],
+                            ]);
 
-                            // --- Logging hasil upload dari Cloudinary ---
-                            if ($uploadedFile) {
-                                // Jika upload berhasil, periksa apakah secure path tersedia
-                                if ($uploadedFile->getSecurePath()) {
-                                    Log::info('Cloudinary upload successful for Gallery. Public ID: ' . $uploadedFile->getPublicId() . ' URL: ' . $uploadedFile->getSecurePath());
-                                    return $uploadedFile->getSecurePath(); // Mengembalikan URL HTTPS
-                                } else {
-                                    // Jika tidak ada secure path meskipun upload berhasil
-                                    Log::error('Cloudinary upload successful but no secure path found for Gallery. Full result: ' . json_encode($uploadedFile->toArray()));
-                                    throw new \Exception('Cloudinary upload successful but no secure path returned.');
-                                }
+                            $statusCode = $response->getStatusCode();
+                            $body = json_decode($response->getBody()->getContents(), true);
+
+                            // Log hasil respons dari Filestack
+                            Log::info('Filestack Upload Response Status: ' . $statusCode);
+                            Log::info('Filestack Upload Response Body: ' . json_encode($body));
+
+                            // Periksa apakah unggahan berhasil dan mendapatkan URL
+                            if ($statusCode === 200 && isset($body['url'])) {
+                                Log::info('Filestack upload successful for Gallery. URL: ' . $body['url'] . ' | Handle: ' . ($body['handle'] ?? 'N/A'));
+                                return $body['url']; // Kembalikan URL Filestack untuk disimpan di database
                             } else {
-                                // Jika Cloudinary::upload() mengembalikan null
-                                Log::error('Cloudinary upload returned NULL for Gallery file: ' . $file->getClientOriginalName());
-                                throw new \Exception('Cloudinary upload failed: returned null. Check Cloudinary credentials.');
+                                Log::error('Filestack upload failed or returned invalid response for Gallery. Status: ' . $statusCode . ' | Body: ' . json_encode($body));
+                                throw new \Exception('Unggahan ke Filestack gagal atau respons tidak valid.');
                             }
-                            // --- Akhir logging hasil upload ---
-            
+
+                        } catch (RequestException $e) {
+                            // Tangani exception spesifik dari Guzzle HTTP (misalnya, koneksi ditolak, timeout)
+                            $errorMessage = $e->getMessage();
+                            if ($e->hasResponse()) {
+                                $errorMessage .= ' | Filestack API Response: ' . $e->getResponse()->getBody()->getContents();
+                            }
+                            Log::error('Filestack Guzzle Request Error (Gallery): ' . $errorMessage . ' | File: ' . $file->getClientOriginalName());
+                            throw new \Exception('Gagal mengunggah gambar ke Filestack (Kesalahan Jaringan/API): ' . $errorMessage);
                         } catch (\Exception $e) {
-                            // Tangkap error dari Cloudinary API atau error umum lainnya
-                            Log::error('Cloudinary Upload Error (Gallery): ' . $e->getMessage() . ' - File: ' . $file->getClientOriginalName());
-                            throw new \Exception('Failed to upload image to Cloudinary: ' . $e->getMessage());
+                            // Tangani semua kesalahan umum lainnya
+                            Log::error('General Filestack Upload Error (Gallery): ' . $e->getMessage() . ' | File: ' . $file->getClientOriginalName() . ' | Path: ' . $file->getRealPath());
+                            throw new \Exception('Gagal mengunggah gambar ke Filestack: ' . $e->getMessage());
                         }
                     }),
             ]);
     }
 
-    // Definisi kolom tabel untuk menampilkan daftar item galeri
     public static function table(Tables\Table $table): Tables\Table
     {
         return $table
             ->columns([
                 ImageColumn::make('image')
                     ->label('Gambar')
-                    ->square(), // Membuat gambar tampil kotak
+                    ->square(),
                 TextColumn::make('caption')
                     ->label('Keterangan')
                     ->searchable()
                     ->sortable(),
             ])
             ->filters([
-                // Tambahkan filter di sini jika diperlukan
+                //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -127,21 +145,19 @@ class GalleryResource extends Resource
             ]);
     }
 
-    // Definisi halaman-halaman yang terkait dengan resource ini
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListGalleries::route('/'),
             'create' => Pages\CreateGallery::route('/create'),
-            'edit' => Pages\EditGallery::route('/{record}/edit'), // Pastikan ini benar (EditGallery)
+            'edit' => Pages\EditGallery::route('/{record}/edit'),
         ];
     }
 
-    // Definisi relasi yang terkait dengan resource ini (jika ada)
     public static function getRelations(): array
     {
         return [
-            // Contoh: RelationManagers\SomeRelationManager::class,
+            //
         ];
     }
 }

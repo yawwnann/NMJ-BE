@@ -13,8 +13,13 @@ use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Resources\Resource;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary; // Tambahkan ini
-use Illuminate\Support\Facades\Log; // Tambahkan ini untuk debugging
+// Hapus baris ini: use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Support\Facades\Log; // Tetap ada untuk debugging
+
+// Tambahkan library HTTP client seperti Guzzle untuk melakukan request ke Filestack API
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException; // Untuk menangani exception dari Guzzle
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile; // Tambahkan ini jika belum ada secara eksplisit
 
 class NewsResource extends Resource
 {
@@ -42,23 +47,87 @@ class NewsResource extends Resource
                     ->maxLength(255)
                     ->helperText('Slug otomatis dibuat dari judul, tapi bisa diubah untuk SEO.'),
 
-                // Thumbnail Berita
+                // Thumbnail Berita (Implementasi Filestack)
                 FileUpload::make('thumbnail')
                     ->label('Gambar Thumbnail')
                     ->image()
-                    ->nullable()
+                    ->nullable() // Tetap nullable jika thumbnail tidak wajib
                     ->imageEditor()
                     ->columnSpanFull()
-                    ->saveUploadedFileUsing(function (Forms\Components\FileUpload $component, \Livewire\Features\SupportFileUploads\TemporaryUploadedFile $file): ?string {
-                        try {
-                            $uploadedFile = Cloudinary::upload($file->getRealPath(), [
-                                'folder' => 'company-profile/news/thumbnails', // Folder di Cloudinary
-                                'public_id' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) . '_' . uniqid(),
-                            ]);
-                            return $uploadedFile->getSecurePath();
-                        } catch (\Exception $e) {
-                            Log::error('Cloudinary Thumbnail Upload Error (News): ' . $e->getMessage());
+                    ->saveUploadedFileUsing(function (Forms\Components\FileUpload $component, TemporaryUploadedFile $file): ?string {
+                        Log::info('Livewire temp file details for Filestack (News Thumbnail). Path: ' . $file->getRealPath() . ' | Size: ' . $file->getSize() . ' | Original Name: ' . $file->getClientOriginalName());
+
+                        if (!$file->exists()) {
+                            Log::error('Temporary file for News Thumbnail upload does not exist: ' . $file->getRealPath());
+                            // Jika nullable, Anda bisa return null di sini, atau throw Exception jika ingin wajib.
                             return null;
+                        }
+
+                        try {
+                            $filestackApiKey = config('filestack.api_key');
+
+                            if (empty($filestackApiKey)) {
+                                Log::error('Filestack API Key is missing in config/filestack.php or .env for News Thumbnail. Please set FILESTACK_API_KEY.');
+                                throw new \Exception('Filestack API Key tidak ditemukan. Pastikan sudah diatur di .env dan config/filestack.php.');
+                            }
+
+                            $client = new Client([
+                                'base_uri' => 'https://www.filestackapi.com/',
+                                'timeout' => 30.0, // Timeout dalam detik
+                            ]);
+
+                            // Log sebelum unggah ke Filestack
+                            Log::info('Attempting Filestack upload for News Thumbnail file: ' . $file->getClientOriginalName() . ' with size: ' . $file->getSize() . ' bytes.');
+
+                            // Lakukan request POST ke Filestack upload API
+                            $response = $client->request('POST', 'api/store/S3', [
+                                'query' => [
+                                    'key' => $filestackApiKey,
+                                    // Anda bisa menambahkan parameter lain seperti 'path' untuk folder khusus berita
+                                    // 'path' => '/company-profile/news/thumbnails/' . date('Y-m-d') . '/',
+                                    // 'filename' => $file->getClientOriginalName(),
+                                ],
+                                'multipart' => [
+                                    [
+                                        'name' => 'fileUpload', // Nama field untuk file
+                                        'contents' => fopen($file->getRealPath(), 'r'),
+                                        'filename' => $file->getClientOriginalName(),
+                                    ],
+                                ],
+                            ]);
+
+                            $statusCode = $response->getStatusCode();
+                            $body = json_decode($response->getBody()->getContents(), true);
+
+                            // Log hasil respons dari Filestack
+                            Log::info('Filestack Upload Response Status (News Thumbnail): ' . $statusCode);
+                            Log::info('Filestack Upload Response Body (News Thumbnail): ' . json_encode($body));
+
+                            // Periksa apakah unggahan berhasil dan mendapatkan URL
+                            if ($statusCode === 200 && isset($body['url'])) {
+                                Log::info('Filestack upload successful for News Thumbnail. URL: ' . $body['url'] . ' | Handle: ' . ($body['handle'] ?? 'N/A'));
+                                return $body['url']; // Kembalikan URL Filestack untuk disimpan di database
+                            } else {
+                                Log::error('Filestack upload failed or returned invalid response for News Thumbnail. Status: ' . $statusCode . ' | Body: ' . json_encode($body));
+                                throw new \Exception('Unggahan thumbnail ke Filestack gagal atau respons tidak valid.');
+                            }
+
+                        } catch (RequestException $e) {
+                            // Tangani exception spesifik dari Guzzle HTTP (misalnya, koneksi ditolak, timeout)
+                            $errorMessage = $e->getMessage();
+                            if ($e->hasResponse()) {
+                                $errorMessage .= ' | Filestack API Response: ' . $e->getResponse()->getBody()->getContents();
+                            }
+                            Log::error('Filestack Guzzle Request Error (News Thumbnail): ' . $errorMessage . ' | File: ' . $file->getClientOriginalName());
+                            // Karena thumbnail nullable, kita bisa return null jika terjadi error fatal
+                            return null;
+                            // Atau throw new \Exception('Gagal mengunggah thumbnail ke Filestack (Kesalahan Jaringan/API): ' . $errorMessage);
+                        } catch (\Exception $e) {
+                            // Tangani semua kesalahan umum lainnya
+                            Log::error('General Filestack Upload Error (News Thumbnail): ' . $e->getMessage() . ' | File: ' . $file->getClientOriginalName() . ' | Path: ' . $file->getRealPath());
+                            // Karena thumbnail nullable, kita bisa return null jika terjadi error fatal
+                            return null;
+                            // Atau throw new \Exception('Gagal mengunggah thumbnail ke Filestack: ' . $e->getMessage());
                         }
                     }),
 
@@ -110,7 +179,9 @@ class NewsResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([])
+            ->filters([
+                //
+            ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
