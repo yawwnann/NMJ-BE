@@ -11,7 +11,10 @@ use Filament\Forms\Components\TextInput;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
-use Filament\Resources\Resource; // Penting: Pastikan ini ada
+use Filament\Resources\Resource;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary; // <-- Tambahkan ini untuk menggunakan Facade Cloudinary
+use Illuminate\Support\Facades\Log; // <-- Tambahkan ini untuk logging
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile; // <-- Tambahkan ini untuk tipe hint yang jelas
 
 class GalleryResource extends Resource
 {
@@ -21,33 +24,79 @@ class GalleryResource extends Resource
     // Mengatur ikon navigasi yang akan muncul di sidebar admin Filament
     protected static ?string $navigationIcon = 'heroicon-o-photo'; // Anda bisa ganti ikon ini
 
-    // Mengatur label singular dan plural untuk navigasi (opsional, defaultnya sudah baik)
+    // Mengatur label singular dan plural untuk navigasi
     protected static ?string $navigationLabel = 'Galeri Foto';
     protected static ?string $pluralModelLabel = 'Galeri Foto';
     protected static ?string $modelLabel = 'Foto Galeri';
-
 
     // Definisi skema formulir untuk membuat atau mengedit item galeri
     public static function form(Forms\Form $form): Forms\Form
     {
         return $form
             ->schema([
-                // Input untuk keterangan/caption foto (opsional)
                 TextInput::make('caption')
                     ->label('Keterangan Foto')
                     ->maxLength(255)
                     ->nullable()
                     ->placeholder('Contoh: Pembangunan Gedung A'),
 
-                // Upload gambar galeri (wajib)
+                // Gambar Galeri - Menggunakan saveUploadedFileUsing untuk Cloudinary
                 FileUpload::make('image')
                     ->label('Gambar Galeri')
                     ->image() // Hanya menerima file gambar
                     ->required() // Wajib diisi
-                    ->directory('gallery-images') // Disimpan di storage/app/public/gallery-images
-                    ->disk('public') // Menggunakan disk 'public' agar bisa diakses via URL
-                    ->imageEditor() // Memungkinkan pengeditan gambar setelah diupload
-                    ->columnSpanFull(), // Mengambil lebar penuh kolom formulir
+                    ->imageEditor() // Memungkinkan pengeditan gambar
+                    ->columnSpanFull() // Mengambil lebar penuh kolom formulir
+                    ->saveUploadedFileUsing(function (Forms\Components\FileUpload $component, TemporaryUploadedFile $file): ?string {
+                        // Pastikan file sementara ada sebelum diproses
+                        if (!$file->exists()) {
+                            Log::error('Temporary file for Gallery upload does not exist: ' . $file->getFilename());
+                            throw new \Exception('Temporary file not found for upload.');
+                        }
+
+                        try {
+                            // Dapatkan path fisik dari file sementara
+                            $realPath = $file->getRealPath();
+                            if (!$realPath) {
+                                Log::error('Temporary file has no real path for Gallery upload: ' . $file->getFilename());
+                                throw new \Exception('Temporary file has no real path.');
+                            }
+
+                            $options = [
+                                'folder' => 'company-profile/gallery', // Tentukan folder di Cloudinary
+                                'public_id' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) . '_' . uniqid(), // Nama file unik
+                            ];
+
+                            // Logging sebelum upload ke Cloudinary
+                            Log::info('Attempting Cloudinary upload for Gallery file: ' . $file->getClientOriginalName() . ' from path: ' . $realPath);
+
+                            // Lakukan proses upload ke Cloudinary
+                            $uploadedFile = Cloudinary::upload($realPath, $options);
+
+                            // --- Logging hasil upload dari Cloudinary ---
+                            if ($uploadedFile) {
+                                // Jika upload berhasil, periksa apakah secure path tersedia
+                                if ($uploadedFile->getSecurePath()) {
+                                    Log::info('Cloudinary upload successful for Gallery. Public ID: ' . $uploadedFile->getPublicId() . ' URL: ' . $uploadedFile->getSecurePath());
+                                    return $uploadedFile->getSecurePath(); // Mengembalikan URL HTTPS
+                                } else {
+                                    // Jika tidak ada secure path meskipun upload berhasil
+                                    Log::error('Cloudinary upload successful but no secure path found for Gallery. Full result: ' . json_encode($uploadedFile->toArray()));
+                                    throw new \Exception('Cloudinary upload successful but no secure path returned.');
+                                }
+                            } else {
+                                // Jika Cloudinary::upload() mengembalikan null
+                                Log::error('Cloudinary upload returned NULL for Gallery file: ' . $file->getClientOriginalName());
+                                throw new \Exception('Cloudinary upload failed: returned null. Check Cloudinary credentials.');
+                            }
+                            // --- Akhir logging hasil upload ---
+            
+                        } catch (\Exception $e) {
+                            // Tangkap error dari Cloudinary API atau error umum lainnya
+                            Log::error('Cloudinary Upload Error (Gallery): ' . $e->getMessage() . ' - File: ' . $file->getClientOriginalName());
+                            throw new \Exception('Failed to upload image to Cloudinary: ' . $e->getMessage());
+                        }
+                    }),
             ]);
     }
 
@@ -56,28 +105,22 @@ class GalleryResource extends Resource
     {
         return $table
             ->columns([
-                // Kolom untuk menampilkan gambar galeri sebagai thumbnail
                 ImageColumn::make('image')
                     ->label('Gambar')
                     ->square(), // Membuat gambar tampil kotak
-
-                // Kolom untuk keterangan foto
                 TextColumn::make('caption')
                     ->label('Keterangan')
-                    ->searchable() // Bisa dicari
-                    ->sortable(), // Bisa diurutkan
+                    ->searchable()
+                    ->sortable(),
             ])
             ->filters([
-                // Anda bisa menambahkan filter di sini jika diperlukan
+                // Tambahkan filter di sini jika diperlukan
             ])
             ->actions([
-                // Aksi untuk mengedit record
                 Tables\Actions\EditAction::make(),
-                // Aksi untuk menghapus record
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                // Grup aksi massal (misalnya menghapus banyak record sekaligus)
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
@@ -88,9 +131,9 @@ class GalleryResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListGalleries::route('/'), // Halaman daftar galeri
-            'create' => Pages\CreateGallery::route('/create'), // Halaman tambah galeri
-            'edit' => Pages\EditGallery::route('/{record}/edit'), // Halaman edit galeri
+            'index' => Pages\ListGalleries::route('/'),
+            'create' => Pages\CreateGallery::route('/create'),
+            'edit' => Pages\EditGallery::route('/{record}/edit'), // Pastikan ini benar (EditGallery)
         ];
     }
 
