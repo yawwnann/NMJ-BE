@@ -1,53 +1,55 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="max-w-xl mx-auto bg-white p-8 rounded shadow">
+    <div class="max-w-lg mx-auto bg-white p-8 rounded-xl shadow-lg mt-8 border border-blue-900">
         <h2 class="text-2xl font-bold text-blue-900 mb-6">Edit Hero Section</h2>
         @if ($errors->any())
-            <div class="mb-4 p-3 bg-red-100 text-red-800 rounded">
-                <ul class="list-disc pl-5">
+            <div class="mb-4 p-3 bg-red-100 text-red-800 rounded shadow">
+                <ul class="list-disc pl-5 text-xs">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
             </div>
         @endif
-        <form action="{{ route('admin.hero.update', $hero) }}" method="POST" enctype="multipart/form-data"
+        <form action="{{ route('admin.hero.update', $hero->id) }}" method="POST" enctype="multipart/form-data"
             class="space-y-5">
-                @csrf
-                @method('PUT')
-                <div>
-                    <label class="block font-semibold mb-1" for="title">Judul</label>
-                    <input type="text" name="title" id="title" value="{{ old('title', $hero->title) }}"
-                        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400" required>
-                </div>
-
-                                   <div>
-                    <label class="block font-semibold mb-1" for="description">Deskripsi</label>
-                    <textarea name="description" id="description" rows="4"
-                        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400"
-                        required>{{ old('description', $hero->description) }}</textarea>
-                </div>
-                <div>
-                    <label class="block font-semibold mb-1" for="image">Upload Gambar Baru (Cloudflare)</label>
-                    <input type="file" name="image" id="image" accept="image/*" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400">
-                    @if($hero->image_url)
-                        <div class="mt-2">
-                            <span class="text-xs text-gray-500">Gambar saat ini:</span><br>
-                            <img src="{{ $hero->image_url }}" alt="Hero Image" class="h-16 w-auto rounded shadow mt-1">
-                        </div>
-                    @endif
-                </div>
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" name="is_active" id="is_active" value="1"
-                        {{ old('is_active', $hero->is_active) ? 'checked' : '' }}>
-                    <label for="is_active" class="font-semibold">Aktifkan Hero Section</label>
-                </div>
-                <div class="flex justify-between items-center mt-6">
-                    <a href="{{ route('admin.hero.index') }}" class="text-blue-700 hover:underline">&larr; Kembali</a>
+            @csrf
+            @method('PUT')
+            <div>
+                <label class="block text-xs font-semibold mb-1 text-blue-900" for="title">Judul</label>
+                <input type="text" name="title" id="title" value="{{ old('title', $hero->title) }}"
+                    class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
+                    required>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold mb-1 text-blue-900" for="description">Deskripsi</label>
+                <textarea name="description" id="description" rows="4"
+                    class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
+                    required>{{ old('description', $hero->description) }}</textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold mb-1 text-blue-900" for="image">Upload Gambar Baru
+                    (Cloudinary)</label>
+                <input type="file" name="image" id="image" accept="image/*"
+                    class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
+                @if($hero->image_url)
+                    <div class="mt-2">
+                        <img src="{{ $hero->image_url }}" alt="Hero Image"
+                            class="h-16 w-28 object-cover rounded shadow border border-blue-200">
+                    </div>
+                @endif
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="checkbox" name="is_active" id="is_active" value="1"
+                    {{ old('is_active', $hero->is_active) ? 'checked' : '' }}>
+                <label for="is_active" class="text-xs font-semibold text-blue-900">Aktifkan Hero Section</label>
+            </div>
+            <div class="flex justify-between items-center mt-6">
+                <a href="{{ route('admin.hero.index') }}" class="text-blue-700 hover:underline text-sm">&larr; Kembali</a>
                 <button type="submit"
-                        class="bg-blue-800 hover:bg-blue-700 text-white px-6 py-2 rounded font-semibold">Update</button>
-                </div>
-            </form>
-        </div>
+                    class="bg-blue-800 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow text-sm">Update</button>
+            </div>
+        </form>
+    </div>
 @endsection

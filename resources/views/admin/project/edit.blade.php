@@ -1,79 +1,182 @@
 @extends('layouts.admin')
 
 @section('content')
-    <h2 class="text-xl font-bold text-blue-900 mb-6">Edit Project</h2>
-    <form action="{{ route('admin.project.update', $project) }}" method="POST" class="max-w-xl bg-white rounded shadow p-6"
-        enctype="multipart/form-data">
-        @csrf
-        @method('PUT')
-        <div class="mb-4">
-            <label class="block font-semibold mb-1">Judul</label>
-            <input type="text" name="title" value="{{ old('title', $project->title) }}"
-                class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400" required>
-            @error('title')<div class="text-red-600 text-sm mt-1">{{ $message }}</div>@enderror
-        </div>
-        <div class="mb-4">
-            <label class="block font-semibold mb-1">Lokasi</label>
-            <input type="text" name="location" value="{{ old('location', $project->location) }}"
-                class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400" required>
-            @error('location')<div class="text-red-600 text-sm mt-1">{{ $message }}</div>@enderror
-        </div>
-        <div class="mb-4">
-            <label class="block font-semibold mb-1">Deskripsi</label>
-            <textarea name="description" rows="3"
-                class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400"
-                required>{{ old('description', $project->description) }}</textarea>
-            @error('description')<div class="text-red-600 text-sm mt-1">{{ $message }}</div>@enderror
-        </div>
-        <div class="mb-4">
-            <label class="block font-semibold mb-1">Kategori</label>
-            <input type="text" name="category" value="{{ old('category', $project->category) }}"
-                class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400" required>
-            @error('category')<div class="text-red-600 text-sm mt-1">{{ $message }}</div>@enderror
-        </div>
-        <div class="mb-4">
-            <label class="block font-semibold mb-1">Durasi</label>
-            <input type="text" name="duration" value="{{ old('duration', $project->duration) }}"
-                class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400" required>
-            @error('duration')<div class="text-red-600 text-sm mt-1">{{ $message }}</div>@enderror
-        </div>
-        <div class="mb-4">
-            <label class="block font-semibold mb-1">Status</label>
-            <select name="status"
-                class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400" required>
-                <option value="planning" {{ old('status', $project->status) == 'planning' ? 'selected' : '' }}>Planning
-                </option>
-                <option value="in_progress" {{ old('status', $project->status) == 'in_progress' ? 'selected' : '' }}>In
-                    Progress</option>
-                <option value="completed" {{ old('status', $project->status) == 'completed' ? 'selected' : '' }}>Completed
-                </option>
-                <option value="on_hold" {{ old('status', $project->status) == 'on_hold' ? 'selected' : '' }}>On Hold
-                </option>
-                <option value="cancelled" {{ old('status', $project->status) == 'cancelled' ? 'selected' : '' }}>Cancelled
-                </option>
-            </select>
-            @error('status')<div class="text-red-600 text-sm mt-1">{{ $message }}</div>@enderror
-        </div>
-        <div class="mb-4">
-            <label class="block font-semibold mb-1">Gambar</label>
-            <input type="file" name="image" accept="image/*" class="w-full border rounded px-3 py-2">
-            @if($project->image_url)
-                <img src="{{ $project->image_url }}" alt="Gambar" class="h-16 w-28 mt-2 rounded shadow">
+    <div class="flex justify-center items-start min-h-screen bg-gray-50">
+        <div class="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8 mt-4">
+            <h2 class="text-2xl font-bold mb-6 text-blue-900">Edit Project</h2>
+            @if ($errors->any())
+                <div class="mb-4 p-3 bg-red-100 text-red-800 rounded shadow">
+                    <ul class="list-disc pl-5 text-xs">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
             @endif
-            @error('image')<div class="text-red-600 text-sm mt-1">{{ $message }}</div>@enderror
+            <form method="POST" action="{{ route('admin.project.update', $project->id) }}" enctype="multipart/form-data"
+                class="space-y-4">
+                @csrf
+                @method('PUT')
+                <div>
+                    <label class="block text-xs font-semibold mb-1 text-blue-900" for="title">Judul</label>
+                    <input type="text" name="title" id="title" value="{{ old('title', $project->title) }}"
+                        class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
+                        required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1 text-blue-900" for="location">Lokasi</label>
+                    <input type="text" name="location" id="location" value="{{ old('location', $project->location) }}"
+                        class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
+                        required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1 text-blue-900" for="description">Deskripsi</label>
+                    <textarea name="description" id="description" rows="4"
+                        class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
+                        required>{{ old('description', $project->description) }}</textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1 text-blue-900" for="construction_category">Kategori
+                        Konstruksi</label>
+                    <select name="construction_category" id="construction_category"
+                        class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
+                        required>
+                        <option value="">-- Pilih Kategori --</option>
+                        <option value="Gedung"
+                            {{ old('construction_category', $project->construction_category) == 'Gedung' ? 'selected' : '' }}>
+                            Gedung</option>
+                        <option value="Jalan"
+                            {{ old('construction_category', $project->construction_category) == 'Jalan' ? 'selected' : '' }}>
+                            Jalan</option>
+                        <option value="Jembatan"
+                            {{ old('construction_category', $project->construction_category) == 'Jembatan' ? 'selected' : '' }}>
+                            Jembatan</option>
+                        <option value="Renovasi"
+                            {{ old('construction_category', $project->construction_category) == 'Renovasi' ? 'selected' : '' }}>
+                            Renovasi</option>
+                        <option value="Drainase"
+                            {{ old('construction_category', $project->construction_category) == 'Drainase' ? 'selected' : '' }}>
+                            Drainase</option>
+                        <option value="Pabrik"
+                            {{ old('construction_category', $project->construction_category) == 'Pabrik' ? 'selected' : '' }}>
+                            Pabrik</option>
+                        <option value="Perumahan"
+                            {{ old('construction_category', $project->construction_category) == 'Perumahan' ? 'selected' : '' }}>
+                            Perumahan</option>
+                        <option value="Apartemen"
+                            {{ old('construction_category', $project->construction_category) == 'Apartemen' ? 'selected' : '' }}>
+                            Apartemen</option>
+                        <option value="Hotel"
+                            {{ old('construction_category', $project->construction_category) == 'Hotel' ? 'selected' : '' }}>
+                            Hotel</option>
+                        <option value="Rumah Sakit"
+                            {{ old('construction_category', $project->construction_category) == 'Rumah Sakit' ? 'selected' : '' }}>
+                            Rumah Sakit</option>
+                        <option value="Sekolah"
+                            {{ old('construction_category', $project->construction_category) == 'Sekolah' ? 'selected' : '' }}>
+                            Sekolah</option>
+                        <option value="Mall"
+                            {{ old('construction_category', $project->construction_category) == 'Mall' ? 'selected' : '' }}>
+                            Mall
+                        </option>
+                        <option value="Bandara"
+                            {{ old('construction_category', $project->construction_category) == 'Bandara' ? 'selected' : '' }}>
+                            Bandara</option>
+                        <option value="Pelabuhan"
+                            {{ old('construction_category', $project->construction_category) == 'Pelabuhan' ? 'selected' : '' }}>
+                            Pelabuhan</option>
+                        <option value="Stadion"
+                            {{ old('construction_category', $project->construction_category) == 'Stadion' ? 'selected' : '' }}>
+                            Stadion</option>
+                        <option value="Lainnya"
+                            {{ old('construction_category', $project->construction_category) == 'Lainnya' ? 'selected' : '' }}>
+                            Lainnya</option>
+                    </select>
+                </div>
+                <div x-data="{
+                            start: '{{ old('start_date', $project->start_date) }}',
+                            end: '{{ old('end_date', $project->end_date) }}',
+                            ongoing: {{ old('is_ongoing', $project->is_ongoing) ? 'true' : 'false' }},
+                            get duration() {
+                                if (!this.start) return '';
+                                if (this.ongoing || !this.end) return '';
+                                const start = new Date(this.start);
+                                const end = new Date(this.end);
+                                if (isNaN(start) || isNaN(end) || end < start) return '';
+                                const diff = end - start;
+                                const days = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+                                const months = Math.floor(days / 30);
+                                return months > 0 ? `${months} bulan ${days % 30} hari` : `${days} hari`;
+                            }
+                        }">
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <label class="block text-xs font-semibold mb-1 text-blue-900" for="start_date">Tanggal
+                                Mulai</label>
+                            <input x-model="start" type="date" name="start_date" id="start_date"
+                                value="{{ old('start_date', $project->start_date) }}"
+                                class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
+                                required>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs font-semibold mb-1 text-blue-900" for="end_date">Tanggal
+                                Selesai</label>
+                            <input x-model="end" :disabled="ongoing" type="date" name="end_date" id="end_date"
+                                value="{{ old('end_date', $project->end_date) }}"
+                                class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2">
+                        <input x-model="ongoing" type="checkbox" name="is_ongoing" id="is_ongoing" value="1"
+                            {{ old('is_ongoing', $project->is_ongoing) ? 'checked' : '' }}>
+                        <label for="is_ongoing" class="text-xs font-semibold text-blue-900">Sampai saat ini</label>
+                    </div>
+                    <div class="mt-2 text-xs text-blue-900 font-semibold" x-text="duration ? 'Durasi: ' + duration : ''">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1 text-blue-900" for="status">Status</label>
+                    <select name="status" id="status"
+                        class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
+                        required>
+                        <option value="planning" {{ old('status', $project->status) == 'planning' ? 'selected' : '' }}>
+                            Planning
+                        </option>
+                        <option value="in_progress"
+                            {{ old('status', $project->status) == 'in_progress' ? 'selected' : '' }}>In
+                            Progress</option>
+                        <option value="completed" {{ old('status', $project->status) == 'completed' ? 'selected' : '' }}>
+                            Completed</option>
+                        <option value="on_hold" {{ old('status', $project->status) == 'on_hold' ? 'selected' : '' }}>On Hold
+                        </option>
+                        <option value="cancelled" {{ old('status', $project->status) == 'cancelled' ? 'selected' : '' }}>
+                            Cancelled</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1 text-blue-900" for="image">Upload Gambar Baru
+                        (Cloudinary)</label>
+                    <input type="file" name="image" id="image" accept="image/*"
+                        class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
+                    @if($project->image_url)
+                        <div class="mt-2">
+                            <img src="{{ $project->image_url }}" alt="Project Image"
+                                class="h-16 w-28 object-cover rounded shadow border border-blue-200">
+                        </div>
+                    @endif
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="is_active" id="is_active" value="1"
+                        {{ old('is_active', $project->is_active) ? 'checked' : '' }}>
+                    <label for="is_active" class="text-xs font-semibold text-blue-900">Aktifkan Project</label>
+                </div>
+                <div class="flex justify-between items-center mt-6">
+                    <a href="{{ route('admin.project.index') }}" class="text-blue-700 hover:underline text-sm">&larr;
+                        Kembali</a>
+                    <button type="submit"
+                        class="bg-blue-800 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow text-sm">Update</button>
+                </div>
+            </form>
         </div>
-        <div class="mb-4">
-            <label class="inline-flex items-center">
-                <input type="checkbox" name="is_active" value="1" class="mr-2"
-                    {{ old('is_active', $project->is_active) ? 'checked' : '' }}>
-                Aktif
-            </label>
-        </div>
-        <div class="flex gap-2">
-            <button type="submit"
-                class="bg-blue-800 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold">Update</button>
-            <a href="{{ route('admin.project.index') }}"
-                class="px-4 py-2 rounded border border-gray-300 text-gray-700">Batal</a>
-        </div>
-    </form>
+    </div>
 @endsection

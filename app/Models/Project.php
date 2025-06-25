@@ -18,6 +18,10 @@ class Project extends Model
         'status',
         'image_url',
         'cloudflare_image_id',
+        'construction_category',
+        'start_date',
+        'end_date',
+        'is_ongoing',
         'is_active'
     ];
 

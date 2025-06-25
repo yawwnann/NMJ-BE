@@ -17,6 +17,8 @@
                 <th class="px-4 py-2">Lokasi</th>
                 <th class="px-4 py-2">Deskripsi</th>
                 <th class="px-4 py-2">Kategori</th>
+                <th class="px-4 py-2">Mulai</th>
+                <th class="px-4 py-2">Selesai</th>
                 <th class="px-4 py-2">Durasi</th>
                 <th class="px-4 py-2">Status</th>
                 <th class="px-4 py-2">Gambar</th>
@@ -30,8 +32,22 @@
                     <td class="px-4 py-2 font-semibold">{{ $project->title }}</td>
                     <td class="px-4 py-2">{{ $project->location }}</td>
                     <td class="px-4 py-2">{{ Str::limit($project->description, 40) }}</td>
-                    <td class="px-4 py-2">{{ $project->category }}</td>
-                    <td class="px-4 py-2">{{ $project->duration }}</td>
+                    <td class="px-4 py-2">{{ $project->construction_category }}</td>
+                    <td class="px-4 py-2">{{ $project->start_date }}</td>
+                    <td class="px-4 py-2">{{ $project->is_ongoing ? 'Sampai saat ini' : $project->end_date }}</td>
+                    <td class="px-4 py-2">
+                        @php
+                            if ($project->is_ongoing || !$project->end_date) {
+                                echo '-';
+                            } else {
+                                $start = \Carbon\Carbon::parse($project->start_date);
+                                $end = \Carbon\Carbon::parse($project->end_date);
+                                $days = $start->diffInDays($end) + 1;
+                                $months = floor($days / 30);
+                                echo $months > 0 ? $months . ' bulan ' . ($days % 30) . ' hari' : $days . ' hari';
+                            }
+                        @endphp
+                    </td>
                     <td class="px-4 py-2">
                         <span class="capitalize">{{ str_replace('_', ' ', $project->status) }}</span>
                     </td>

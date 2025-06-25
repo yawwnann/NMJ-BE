@@ -34,8 +34,10 @@ class ProjectController extends Controller
             'title' => 'required|string|max:255',
             'location' => 'required|string|max:255',
             'description' => 'required|string',
-            'category' => 'required|string|max:255',
-            'duration' => 'required|string|max:255',
+            'construction_category' => 'required|string|max:255',
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'is_ongoing' => 'boolean',
             'status' => 'required|in:planning,in_progress,completed,on_hold,cancelled',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'is_active' => 'boolean',
@@ -43,8 +45,12 @@ class ProjectController extends Controller
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
-        $data = $request->only(['title', 'location', 'description', 'category', 'duration', 'status', 'is_active']);
+        $data = $request->only(['title', 'location', 'description', 'construction_category', 'start_date', 'end_date', 'status', 'is_active']);
+        $data['is_ongoing'] = $request->boolean('is_ongoing', false);
         $data['is_active'] = $request->boolean('is_active', true);
+        if ($data['is_ongoing']) {
+            $data['end_date'] = null;
+        }
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $result = $this->cloudinaryService->uploadImage($file);
@@ -70,8 +76,10 @@ class ProjectController extends Controller
             'title' => 'required|string|max:255',
             'location' => 'required|string|max:255',
             'description' => 'required|string',
-            'category' => 'required|string|max:255',
-            'duration' => 'required|string|max:255',
+            'construction_category' => 'required|string|max:255',
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'is_ongoing' => 'boolean',
             'status' => 'required|in:planning,in_progress,completed,on_hold,cancelled',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'is_active' => 'boolean',
@@ -79,8 +87,12 @@ class ProjectController extends Controller
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
-        $data = $request->only(['title', 'location', 'description', 'category', 'duration', 'status', 'is_active']);
+        $data = $request->only(['title', 'location', 'description', 'construction_category', 'start_date', 'end_date', 'status', 'is_active']);
+        $data['is_ongoing'] = $request->boolean('is_ongoing', false);
         $data['is_active'] = $request->boolean('is_active', true);
+        if ($data['is_ongoing']) {
+            $data['end_date'] = null;
+        }
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $result = $this->cloudinaryService->uploadImage($file);

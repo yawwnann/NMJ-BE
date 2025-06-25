@@ -21,6 +21,10 @@ return new class extends Migration {
             $table->string('image_url')->nullable();
             $table->string('cloudflare_image_id')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->string('construction_category')->nullable();
+            $table->date('start_date');
+            $table->date('end_date')->nullable();
+            $table->boolean('is_ongoing')->default(false);
             $table->timestamps();
         });
     }

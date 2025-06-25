@@ -22,7 +22,7 @@
     <div class="flex h-screen">
         <!-- Sidebar -->
         <aside x-data="{ open: false }"
-            class="bg-blue-900 border-r border-blue-800 flex flex-col w-20 md:w-64 transition-all duration-200 shadow-lg">
+            class="bg-blue-900 border-r border-blue-800 flex flex-col w-20 md:w-64 transition-all duration-200 shadow-lg fixed inset-y-0 left-0 z-30 h-screen">
             <div class="flex items-center justify-center  border-b border-blue-800">
                 <img src="/logo.png" alt="Logo" class="h-20 w-auto md:h-20 md:w-auto">
             </div>
@@ -89,10 +89,10 @@
             </div>
         </aside>
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col min-h-screen">
+        <div class="flex-1 flex flex-col min-h-screen ml-20 md:ml-64">
             <!-- Header -->
             <header
-                class="sticky top-0 z-10 bg-blue-900 border-b border-blue-800 h-16 flex items-center justify-between px-6 shadow-sm">
+                class="sticky top-0 z-10 bg-blue-900 border-b border-blue-800 h-20 flex items-center justify-between px-6 shadow-sm">
                 <div class="flex items-center gap-2">
                     <button @click="open = !open" class="md:hidden text-blue-100 hover:text-white focus:outline-none">
                         <!-- Heroicon: Menu -->

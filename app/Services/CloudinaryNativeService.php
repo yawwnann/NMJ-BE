@@ -29,4 +29,9 @@ class CloudinaryNativeService
             'format' => $result['format'] ?? null,
         ];
     }
+
+    public function deleteImage($publicId)
+    {
+        $this->cloudinary->uploadApi()->destroy($publicId);
+    }
 }
