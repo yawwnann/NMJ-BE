@@ -31,12 +31,41 @@ class ProjectController extends Controller
                 $query->byStatus($request->status);
             }
 
-            // Filter by category
-            if ($request->has('category')) {
-                $query->byCategory($request->category);
+            // Filter by construction_category
+            if ($request->has('construction_category')) {
+                $query->where('construction_category', $request->construction_category);
             }
 
-            $projects = $query->get();
+            $projects = $query->get()->map(function ($project) {
+                $start = $project->start_date ? \Carbon\Carbon::parse($project->start_date) : null;
+                $end = ($project->is_ongoing || !$project->end_date) ? null : \Carbon\Carbon::parse($project->end_date);
+                $durasi = null;
+                if ($start && $end) {
+                    $days = $start->diffInDays($end) + 1;
+                    $months = floor($days / 30);
+                    $durasi = $months > 0 ? $months . ' bulan ' . ($days % 30) . ' hari' : $days . ' hari';
+                } elseif ($start && $project->is_ongoing) {
+                    $days = $start->diffInDays(now()) + 1;
+                    $months = floor($days / 30);
+                    $durasi = $months > 0 ? $months . ' bulan ' . ($days % 30) . ' hari' : $days . ' hari';
+                }
+                return [
+                    'id' => $project->id,
+                    'title' => $project->title,
+                    'location' => $project->location,
+                    'description' => $project->description,
+                    'construction_category' => $project->construction_category,
+                    'start_date' => $project->start_date,
+                    'end_date' => $project->end_date,
+                    'is_ongoing' => $project->is_ongoing,
+                    'status' => $project->status,
+                    'is_active' => $project->is_active,
+                    'image_url' => $project->image_url,
+                    'duration' => $durasi,
+                    'created_at' => $project->created_at,
+                    'updated_at' => $project->updated_at,
+                ];
+            });
 
             return response()->json([
                 'success' => true,
@@ -62,8 +91,10 @@ class ProjectController extends Controller
                 'title' => 'required|string|max:255',
                 'location' => 'required|string|max:255',
                 'description' => 'required|string',
-                'category' => 'required|string|max:255',
-                'duration' => 'required|string|max:255',
+                'construction_category' => 'required|string|max:255',
+                'start_date' => 'required|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date',
+                'is_ongoing' => 'boolean',
                 'status' => 'required|in:planning,in_progress,completed,on_hold,cancelled',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
                 'is_active' => 'boolean'
@@ -77,8 +108,12 @@ class ProjectController extends Controller
                 ], 422);
             }
 
-            $data = $request->only(['title', 'location', 'description', 'category', 'duration', 'status', 'is_active']);
+            $data = $request->only(['title', 'location', 'description', 'construction_category', 'start_date', 'end_date', 'status', 'is_active']);
+            $data['is_ongoing'] = $request->boolean('is_ongoing', false);
             $data['is_active'] = $request->boolean('is_active', true);
+            if ($data['is_ongoing']) {
+                $data['end_date'] = null;
+            }
 
             // Handle image upload to Cloudinary
             if ($request->hasFile('image')) {
@@ -118,9 +153,36 @@ class ProjectController extends Controller
     public function show(Project $project): JsonResponse
     {
         try {
+            $start = $project->start_date ? \Carbon\Carbon::parse($project->start_date) : null;
+            $end = ($project->is_ongoing || !$project->end_date) ? null : \Carbon\Carbon::parse($project->end_date);
+            $durasi = null;
+            if ($start && $end) {
+                $days = $start->diffInDays($end) + 1;
+                $months = floor($days / 30);
+                $durasi = $months > 0 ? $months . ' bulan ' . ($days % 30) . ' hari' : $days . ' hari';
+            } elseif ($start && $project->is_ongoing) {
+                $days = $start->diffInDays(now()) + 1;
+                $months = floor($days / 30);
+                $durasi = $months > 0 ? $months . ' bulan ' . ($days % 30) . ' hari' : $days . ' hari';
+            }
             return response()->json([
                 'success' => true,
-                'data' => $project,
+                'data' => [
+                    'id' => $project->id,
+                    'title' => $project->title,
+                    'location' => $project->location,
+                    'description' => $project->description,
+                    'construction_category' => $project->construction_category,
+                    'start_date' => $project->start_date,
+                    'end_date' => $project->end_date,
+                    'is_ongoing' => $project->is_ongoing,
+                    'status' => $project->status,
+                    'is_active' => $project->is_active,
+                    'image_url' => $project->image_url,
+                    'duration' => $durasi,
+                    'created_at' => $project->created_at,
+                    'updated_at' => $project->updated_at,
+                ],
                 'message' => 'Project retrieved successfully'
             ]);
         } catch (\Exception $e) {
@@ -142,8 +204,10 @@ class ProjectController extends Controller
                 'title' => 'sometimes|required|string|max:255',
                 'location' => 'sometimes|required|string|max:255',
                 'description' => 'sometimes|required|string',
-                'category' => 'sometimes|required|string|max:255',
-                'duration' => 'sometimes|required|string|max:255',
+                'construction_category' => 'sometimes|required|string|max:255',
+                'start_date' => 'sometimes|required|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date',
+                'is_ongoing' => 'boolean',
                 'status' => 'sometimes|required|in:planning,in_progress,completed,on_hold,cancelled',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
                 'is_active' => 'boolean'
@@ -157,10 +221,13 @@ class ProjectController extends Controller
                 ], 422);
             }
 
-            $data = $request->only(['title', 'location', 'description', 'category', 'duration', 'status', 'is_active']);
-
-            if ($request->has('is_active')) {
+            $data = $request->only(['title', 'location', 'description', 'construction_category', 'start_date', 'end_date', 'status', 'is_active']);
+            $data['is_ongoing'] = $request->boolean('is_ongoing', $project->is_ongoing);
+            if (isset($data['is_active'])) {
                 $data['is_active'] = $request->boolean('is_active');
+            }
+            if ($data['is_ongoing']) {
+                $data['end_date'] = null;
             }
 
             // Handle image upload to Cloudinary

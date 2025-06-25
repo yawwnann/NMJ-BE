@@ -1,6 +1,6 @@
 # NMJ Backend API
 
-A Laravel-based REST API for managing website content with Cloudflare Images integration.
+A Laravel-based REST API for managing website content with Cloudinary image integration.
 
 ## Features
 
@@ -8,7 +8,7 @@ A Laravel-based REST API for managing website content with Cloudflare Images int
 -   **Services Management**: Manage company services
 -   **Team Management**: Manage team members with profile images
 -   **Project Management**: Manage projects with status tracking and filtering
--   **Cloudflare Images Integration**: Automatic image upload and optimization
+-   **Cloudinary Integration**: Automatic image upload and optimization
 -   **RESTful API**: Complete CRUD operations for all entities
 -   **Validation**: Comprehensive input validation
 -   **Error Handling**: Consistent error responses
@@ -17,7 +17,7 @@ A Laravel-based REST API for managing website content with Cloudflare Images int
 
 -   **Framework**: Laravel 12
 -   **Database**: MySQL/PostgreSQL/SQLite
--   **Image Storage**: Cloudflare Images
+-   **Image Storage**: Cloudinary
 -   **API**: RESTful JSON API
 -   **Validation**: Laravel Validation
 
@@ -55,12 +55,11 @@ DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-5. **Configure Cloudflare Images**
-   Add your Cloudflare credentials to `.env`:
+5. **Configure Cloudinary**
+   Add your Cloudinary credentials to `.env`:
 
 ```env
-CLOUDFLARE_ACCOUNT_ID=your_account_id
-CLOUDFLARE_API_TOKEN=your_api_token
+CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
 ```
 
 6. **Run migrations**
@@ -123,8 +122,7 @@ http://localhost:8000/api
 -   `id` - Primary key
 -   `title` - Hero section title
 -   `description` - Hero section description
--   `image_url` - Cloudflare image URL
--   `cloudflare_image_id` - Cloudflare image ID
+-   `image_url` - Cloudinary image URL
 -   `is_active` - Active status
 -   `created_at` - Creation timestamp
 -   `updated_at` - Update timestamp
@@ -147,7 +145,6 @@ http://localhost:8000/api
 -   `email` - Email address
 -   `address` - Address
 -   `image_url` - Profile image URL
--   `cloudflare_image_id` - Cloudflare image ID
 -   `is_active` - Active status
 -   `created_at` - Creation timestamp
 -   `updated_at` - Update timestamp
@@ -158,22 +155,27 @@ http://localhost:8000/api
 -   `title` - Project title
 -   `location` - Project location
 -   `description` - Project description
--   `category` - Project category
--   `duration` - Project duration
+-   `construction_category` - Project construction category (e.g. Gedung, Jalan, dll)
+-   `start_date` - Project start date
+-   `end_date` - Project end date (nullable, diisi jika tidak ongoing)
+-   `is_ongoing` - Ongoing status (boolean)
 -   `status` - Project status (planning, in_progress, completed, on_hold, cancelled)
--   `image_url` - Project image URL
--   `cloudflare_image_id` - Cloudflare image ID
+-   `image_url` - Project image URL (Cloudinary)
 -   `is_active` - Active status
 -   `created_at` - Creation timestamp
 -   `updated_at` - Update timestamp
 
-## Cloudflare Images Integration
+**Note:**
 
-The API automatically handles image uploads to Cloudflare Images:
+-   `duration` tidak disimpan di database, tapi dihitung otomatis dari `start_date` dan `end_date` (atau hari ini jika ongoing) di API response.
 
-1. **Upload Process**: Images are validated and uploaded to Cloudflare
-2. **Optimization**: Cloudflare automatically optimizes images
-3. **CDN**: Images are served through Cloudflare's global CDN
+## Cloudinary Integration
+
+The API automatically handles image uploads to Cloudinary:
+
+1. **Upload Process**: Images are validated and uploaded to Cloudinary
+2. **Optimization**: Cloudinary automatically optimizes images
+3. **CDN**: Images are served through Cloudinary's global CDN
 4. **Cleanup**: Old images are automatically deleted when updated
 
 ### Supported Image Formats
@@ -342,4 +344,4 @@ For support, please contact the development team or create an issue in the repos
 -   Services management
 -   Team management
 -   Project management
--   Cloudflare Images integration
+-   Cloudinary image integration
