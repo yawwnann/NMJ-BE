@@ -4,18 +4,18 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Team;
-use App\Services\CloudflareImageService;
+use App\Services\CloudinaryImageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 
 class TeamController extends Controller
 {
-    protected $cloudflareService;
+    protected $cloudinaryService;
 
-    public function __construct(CloudflareImageService $cloudflareService)
+    public function __construct(CloudinaryImageService $cloudinaryService)
     {
-        $this->cloudflareService = $cloudflareService;
+        $this->cloudinaryService = $cloudinaryService;
     }
 
     /**
@@ -67,26 +67,17 @@ class TeamController extends Controller
             $data = $request->only(['name', 'position', 'phone', 'email', 'address', 'is_active']);
             $data['is_active'] = $request->boolean('is_active', true);
 
-            // Handle image upload to Cloudflare
+            // Handle image upload to Cloudinary
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
-
-                if (!$this->cloudflareService->validateFile($file)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid image file'
-                    ], 422);
-                }
-
-                $uploadResult = $this->cloudflareService->uploadImage($file);
-
-                if ($uploadResult) {
-                    $data['image_url'] = $uploadResult['url'];
-                    $data['cloudflare_image_id'] = $uploadResult['id'];
+                $result = $this->cloudinaryService->uploadImage($file);
+                if ($result && isset($result['url'])) {
+                    $data['image_url'] = $result['url'];
+                    $data['cloudinary_public_id'] = $result['public_id'] ?? null;
                 } else {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Failed to upload image to Cloudflare'
+                        'message' => 'Failed to upload image to Cloudinary'
                     ], 500);
                 }
             }
@@ -158,31 +149,17 @@ class TeamController extends Controller
                 $data['is_active'] = $request->boolean('is_active');
             }
 
-            // Handle image upload to Cloudflare
+            // Handle image upload to Cloudinary
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
-
-                if (!$this->cloudflareService->validateFile($file)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid image file'
-                    ], 422);
-                }
-
-                // Delete old image from Cloudflare if exists
-                if ($team->cloudflare_image_id) {
-                    $this->cloudflareService->deleteImage($team->cloudflare_image_id);
-                }
-
-                $uploadResult = $this->cloudflareService->uploadImage($file);
-
-                if ($uploadResult) {
-                    $data['image_url'] = $uploadResult['url'];
-                    $data['cloudflare_image_id'] = $uploadResult['id'];
+                $result = $this->cloudinaryService->uploadImage($file);
+                if ($result && isset($result['url'])) {
+                    $data['image_url'] = $result['url'];
+                    $data['cloudinary_public_id'] = $result['public_id'] ?? null;
                 } else {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Failed to upload image to Cloudflare'
+                        'message' => 'Failed to upload image to Cloudinary'
                     ], 500);
                 }
             }
@@ -210,11 +187,6 @@ class TeamController extends Controller
     public function destroy(Team $team): JsonResponse
     {
         try {
-            // Delete image from Cloudflare if exists
-            if ($team->cloudflare_image_id) {
-                $this->cloudflareService->deleteImage($team->cloudflare_image_id);
-            }
-
             $team->delete();
 
             return response()->json([

@@ -4,17 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
-use App\Services\CloudflareImageService;
+use App\Services\CloudinaryNativeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ProjectController extends Controller
 {
-    protected $cloudflareService;
+    protected $cloudinaryService;
 
-    public function __construct(CloudflareImageService $cloudflareService)
+    public function __construct()
     {
-        $this->cloudflareService = $cloudflareService;
+        $this->cloudinaryService = new CloudinaryNativeService();
     }
 
     public function index()
@@ -47,15 +47,12 @@ class ProjectController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            if (!$this->cloudflareService->validateFile($file)) {
-                return back()->withErrors(['image' => 'Invalid image file'])->withInput();
-            }
-            $uploadResult = $this->cloudflareService->uploadImage($file);
-            if ($uploadResult) {
-                $data['image_url'] = $uploadResult['url'];
-                $data['cloudflare_image_id'] = $uploadResult['id'];
+            $result = $this->cloudinaryService->uploadImage($file);
+            if ($result && isset($result['url'])) {
+                $data['image_url'] = $result['url'];
+                $data['cloudinary_public_id'] = $result['public_id'] ?? null;
             } else {
-                return back()->withErrors(['image' => 'Failed to upload image to Cloudflare'])->withInput();
+                return back()->withErrors(['image' => 'Failed to upload image to Cloudinary'])->withInput();
             }
         }
         Project::create($data);
@@ -86,18 +83,12 @@ class ProjectController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            if (!$this->cloudflareService->validateFile($file)) {
-                return back()->withErrors(['image' => 'Invalid image file'])->withInput();
-            }
-            if ($project->cloudflare_image_id) {
-                $this->cloudflareService->deleteImage($project->cloudflare_image_id);
-            }
-            $uploadResult = $this->cloudflareService->uploadImage($file);
-            if ($uploadResult) {
-                $data['image_url'] = $uploadResult['url'];
-                $data['cloudflare_image_id'] = $uploadResult['id'];
+            $result = $this->cloudinaryService->uploadImage($file);
+            if ($result && isset($result['url'])) {
+                $data['image_url'] = $result['url'];
+                $data['cloudinary_public_id'] = $result['public_id'] ?? null;
             } else {
-                return back()->withErrors(['image' => 'Failed to upload image to Cloudflare'])->withInput();
+                return back()->withErrors(['image' => 'Failed to upload image to Cloudinary'])->withInput();
             }
         }
         $project->update($data);
@@ -106,9 +97,6 @@ class ProjectController extends Controller
 
     public function destroy(Project $project)
     {
-        if ($project->cloudflare_image_id) {
-            $this->cloudflareService->deleteImage($project->cloudflare_image_id);
-        }
         $project->delete();
         return redirect()->route('admin.project.index')->with('success', 'Project deleted successfully!');
     }

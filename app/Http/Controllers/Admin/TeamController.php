@@ -4,17 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Team;
-use App\Services\CloudflareImageService;
+use App\Services\CloudinaryNativeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class TeamController extends Controller
 {
-    protected $cloudflareService;
+    protected $cloudinaryService;
 
-    public function __construct(CloudflareImageService $cloudflareService)
+    public function __construct()
     {
-        $this->cloudflareService = $cloudflareService;
+        $this->cloudinaryService = new CloudinaryNativeService();
     }
 
     public function index()
@@ -46,15 +46,12 @@ class TeamController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            if (!$this->cloudflareService->validateFile($file)) {
-                return back()->withErrors(['image' => 'Invalid image file'])->withInput();
-            }
-            $uploadResult = $this->cloudflareService->uploadImage($file);
-            if ($uploadResult) {
-                $data['image_url'] = $uploadResult['url'];
-                $data['cloudflare_image_id'] = $uploadResult['id'];
+            $result = $this->cloudinaryService->uploadImage($file);
+            if ($result && isset($result['url'])) {
+                $data['image_url'] = $result['url'];
+                $data['cloudinary_public_id'] = $result['public_id'] ?? null;
             } else {
-                return back()->withErrors(['image' => 'Failed to upload image to Cloudflare'])->withInput();
+                return back()->withErrors(['image' => 'Failed to upload image to Cloudinary'])->withInput();
             }
         }
         Team::create($data);
@@ -84,18 +81,12 @@ class TeamController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            if (!$this->cloudflareService->validateFile($file)) {
-                return back()->withErrors(['image' => 'Invalid image file'])->withInput();
-            }
-            if ($team->cloudflare_image_id) {
-                $this->cloudflareService->deleteImage($team->cloudflare_image_id);
-            }
-            $uploadResult = $this->cloudflareService->uploadImage($file);
-            if ($uploadResult) {
-                $data['image_url'] = $uploadResult['url'];
-                $data['cloudflare_image_id'] = $uploadResult['id'];
+            $result = $this->cloudinaryService->uploadImage($file);
+            if ($result && isset($result['url'])) {
+                $data['image_url'] = $result['url'];
+                $data['cloudinary_public_id'] = $result['public_id'] ?? null;
             } else {
-                return back()->withErrors(['image' => 'Failed to upload image to Cloudflare'])->withInput();
+                return back()->withErrors(['image' => 'Failed to upload image to Cloudinary'])->withInput();
             }
         }
         $team->update($data);
@@ -104,8 +95,8 @@ class TeamController extends Controller
 
     public function destroy(Team $team)
     {
-        if ($team->cloudflare_image_id) {
-            $this->cloudflareService->deleteImage($team->cloudflare_image_id);
+        if ($team->cloudinary_public_id) {
+            $this->cloudinaryService->deleteImage($team->cloudinary_public_id);
         }
         $team->delete();
         return redirect()->route('admin.team.index')->with('success', 'Team member deleted successfully!');
