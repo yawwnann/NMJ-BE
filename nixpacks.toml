@@ -1,0 +1,18 @@
+# nixpacks.toml
+# Konfigurasi build dan deploy untuk Railway menggunakan Nixpacks
+
+[phases.build]
+# Perintah ini dijalankan saat proses build untuk membuat aset
+# dan mengoptimalkan aplikasi Laravel.
+cmds = [
+    "npm install", 
+    "npm run build", 
+    "php artisan config:cache", 
+    "php artisan route:cache", 
+    "php artisan view:cache"
+]
+
+[start]
+# Perintah ini dijalankan untuk memulai aplikasi Anda setelah build selesai.
+# Menjalankan migrasi sebelum memulai server adalah praktik terbaik.
+cmd = "php artisan migrate --force && php artisan serve --host 0.0.0.0 --port $PORT" 
