@@ -2,9 +2,10 @@
 cmds = [
   "chmod -R 777 storage bootstrap/cache",
   "composer install --ignore-platform-reqs --no-interaction --prefer-dist",
+  "php artisan config:clear",
+  "php artisan config:cache",
   "npm install",
   "npm run build",
-  "php artisan config:cache",
   "php artisan route:cache",
   "php artisan view:cache"
 ]
