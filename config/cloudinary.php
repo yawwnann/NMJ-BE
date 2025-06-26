@@ -31,11 +31,11 @@ return [
     |
     |
     */
-    'cloud_url' => 'cloudinary://441729569425797:t2xm-qRNjFjo4S92jViNYNi0ZVw@dbcqki5id',
+    'cloud_url' => env('CLOUDINARY_URL'),
     'cloud' => [
-        'cloud_name' => 'dbcqki5id',
-        'api_key' => '441729569425797',
-        'api_secret' => 't2xm-qRNjFjo4S92jViNYNi0ZVw',
+        'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+        'api_key' => env('CLOUDINARY_API_KEY'),
+        'api_secret' => env('CLOUDINARY_API_SECRET'),
     ],
 
     /**

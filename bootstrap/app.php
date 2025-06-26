@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'is_admin' => IsAdmin::class
         ]);
 
+        $middleware->trustProxies(at: [
+            '*'
+        ]);
+
         // Add CORS middleware to the global stack
         $middleware->use([
             \Illuminate\Http\Middleware\HandleCors::class,
