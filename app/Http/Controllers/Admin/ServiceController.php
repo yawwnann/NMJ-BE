@@ -23,14 +23,14 @@ class ServiceController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'description' => 'required|string',
             'is_active' => 'boolean',
         ]);
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
-        $data = $request->only(['title', 'description', 'is_active']);
+        $data = $request->only(['name', 'description', 'is_active']);
         $data['is_active'] = $request->boolean('is_active', true);
         Service::create($data);
         return redirect()->route('admin.service.index')->with('success', 'Service created successfully!');
@@ -44,14 +44,14 @@ class ServiceController extends Controller
     public function update(Request $request, Service $service)
     {
         $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'description' => 'required|string',
             'is_active' => 'boolean',
         ]);
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
-        $data = $request->only(['title', 'description', 'is_active']);
+        $data = $request->only(['name', 'description', 'is_active']);
         $data['is_active'] = $request->boolean('is_active', true);
         $service->update($data);
         return redirect()->route('admin.service.index')->with('success', 'Service updated successfully!');
