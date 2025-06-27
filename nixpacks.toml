@@ -1,9 +1,8 @@
 [phases.build]
 cmds = [
-  "chmod -R 777 storage bootstrap/cache",
-  "composer install --ignore-platform-reqs --no-interaction --prefer-dist",
   "php artisan config:clear",
   "php artisan config:cache",
+  "php -r \"echo 'APP_URL=' . config('app.url') . PHP_EOL;\"",
   "npm install",
   "npm run build",
   "php artisan route:cache",
