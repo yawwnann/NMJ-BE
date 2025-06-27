@@ -26,11 +26,6 @@
                     class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
                     required>{{ old('description') }}</textarea>
             </div>
-            <div>
-                <label class="block text-xs font-semibold mb-1 text-blue-900" for="image">Upload Gambar (Cloudinary)</label>
-                <input type="file" name="image" id="image" accept="image/*"
-                    class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
-            </div>
             <div class="flex items-center gap-2">
                 <input type="checkbox" name="is_active" id="is_active" value="1" {{ old('is_active') ? 'checked' : '' }}>
                 <label for="is_active" class="text-xs font-semibold text-blue-900">Aktifkan Service</label>

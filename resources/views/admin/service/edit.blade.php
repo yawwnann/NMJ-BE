@@ -28,18 +28,6 @@
                     class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
                     required>{{ old('description', $service->description) }}</textarea>
             </div>
-            <div>
-                <label class="block text-xs font-semibold mb-1 text-blue-900" for="image">Upload Gambar Baru
-                    (Cloudinary)</label>
-                <input type="file" name="image" id="image" accept="image/*"
-                    class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
-                @if($service->image_url)
-                    <div class="mt-2">
-                        <img src="{{ $service->image_url }}" alt="Service Image"
-                            class="h-16 w-28 object-cover rounded shadow border border-blue-200">
-                    </div>
-                @endif
-            </div>
             <div class="flex items-center gap-2">
                 <input type="checkbox" name="is_active" id="is_active" value="1"
                     {{ old('is_active', $service->is_active) ? 'checked' : '' }}>

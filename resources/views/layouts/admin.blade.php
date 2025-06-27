@@ -29,11 +29,7 @@
             <nav class="flex-1 py-4 px-2 space-y-2">
                 <a href="{{ route('admin.dashboard') }}"
                     class="flex items-center gap-3 px-3 py-2 rounded-lg text-blue-100 hover:bg-blue-800 hover:text-white transition">
-                    <!-- Heroicon: Home -->
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M3 12l2-2m0 0l7-7 7 7m-9 2v6a2 2 0 002 2h4a2 2 0 002-2v-6m-5 0h6" />
-                    </svg>
+                    <img src="/logo.png" alt="Logo" class="h-6 w-6 rounded-full bg-white p-1">
                     <span class="hidden md:inline">Dashboard</span>
                 </a>
                 <a href="{{ route('admin.hero.index') }}"

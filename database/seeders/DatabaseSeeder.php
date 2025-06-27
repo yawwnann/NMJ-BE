@@ -29,5 +29,7 @@ class DatabaseSeeder extends Seeder
                 'role' => 'admin',
             ]);
         }
+
+        // Pemanggilan seeder AdminUserSeeder dan ServiceSeeder dihapus sementara
     }
 }
