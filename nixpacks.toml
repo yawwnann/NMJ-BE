@@ -1,6 +1,6 @@
 [phases.build]
 cmds = [
-  "echo -e \"APP_URL=$APP_URL\\nAPP_ENV=$APP_ENV\\nAPP_KEY=$APP_KEY\" > .env",
+  "echo -e \"APP_URL=https://nmj-be-production.up.railway.app\\nASSET_URL=https://nmj-be-production.up.railway.app\\nAPP_ENV=development\\nAPP_KEY=base64:...\" > .env",
   "php artisan config:clear",
   "php artisan config:cache",
   "npm install",
