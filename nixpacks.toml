@@ -2,7 +2,7 @@
 cmds = [
   "php artisan config:clear",
   "php artisan config:cache",
-  "php -r \"echo 'APP_URL=' . config('app.url') . PHP_EOL;\"",
+  "php artisan config:get app.url",
   "npm install",
   "npm run build",
   "php artisan route:cache",
