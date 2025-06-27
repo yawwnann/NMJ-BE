@@ -16,19 +16,8 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
 
-        if (!User::where('email', 'admin@gmail.com')->exists()) {
-            User::create([
-                'name' => 'Admin',
-                'email' => 'admin@gmail.com',
-                'password' => Hash::make('password123'),
-                'role' => 'admin',
-            ]);
-        }
+        $this->call(AdminUserSeeder::class);
 
         // Pemanggilan seeder AdminUserSeeder dan ServiceSeeder dihapus sementara
     }
