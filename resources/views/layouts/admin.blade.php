@@ -8,6 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
+    <link rel="icon" href="/logo.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -29,7 +30,11 @@
             <nav class="flex-1 py-4 px-2 space-y-2">
                 <a href="{{ route('admin.dashboard') }}"
                     class="flex items-center gap-3 px-3 py-2 rounded-lg text-blue-100 hover:bg-blue-800 hover:text-white transition">
-                    <img src="/logo.png" alt="Logo" class="h-6 w-6 rounded-full bg-white p-1">
+                    <!-- Heroicon: Home -->
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3 12l2-2m0 0l7-7 7 7m-9 2v6a2 2 0 002 2h4a2 2 0 002-2v-6m-5 0h6" />
+                    </svg>
                     <span class="hidden md:inline">Dashboard</span>
                 </a>
                 <a href="{{ route('admin.hero.index') }}"
