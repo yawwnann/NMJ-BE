@@ -115,6 +115,45 @@ http://localhost:8000/api
 -   `PUT /projects/{id}` - Update project
 -   `DELETE /projects/{id}` - Delete project
 
+## API Documentation
+
+### Authentication
+
+-   `GET /api/user` (auth:sanctum) — Get authenticated user info
+
+### Hero Section
+
+-   `GET    /api/hero-sections` — List all hero sections
+-   `POST   /api/hero-sections` — Create new hero section
+-   `GET    /api/hero-sections/{id}` — Get detail hero section
+-   `PUT    /api/hero-sections/{id}` — Update hero section
+-   `DELETE /api/hero-sections/{id}` — Delete hero section
+
+### Service
+
+-   `GET    /api/services` — List all services
+-   `POST   /api/services` — Create new service
+-   `GET    /api/services/{id}` — Get detail service
+-   `PUT    /api/services/{id}` — Update service
+-   `DELETE /api/services/{id}` — Delete service
+
+### Team
+
+-   `GET    /api/teams` — List all teams
+-   `POST   /api/teams` — Create new team
+-   `GET    /api/teams/{id}` — Get detail team
+-   `PUT    /api/teams/{id}` — Update team
+-   `DELETE /api/teams/{id}` — Delete team
+
+### Project
+
+-   `GET    /api/projects` — List all projects
+-   `POST   /api/projects` — Create new project
+-   `GET    /api/projects/statistics` — Get project statistics
+-   `GET    /api/projects/{id}` — Get detail project
+-   `PUT    /api/projects/{id}` — Update project
+-   `DELETE /api/projects/{id}` — Delete project
+
 ## Database Schema
 
 ### Hero Sections
