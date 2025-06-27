@@ -10,7 +10,7 @@
         <div class="mb-4 p-3 bg-green-100 text-green-800 rounded shadow">{{ session('success') }}</div>
     @endif
     <div class="bg-white rounded-xl shadow-lg overflow-x-auto border border-blue-900">
-        <table class="min-w-full text-sm">
+        <table class="min-w-full text-xs md:text-sm">
             <thead class="bg-blue-900 text-white">
                 <tr>
                     <th class="px-4 py-3 font-semibold">#</th>

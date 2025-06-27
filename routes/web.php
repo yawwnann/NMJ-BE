@@ -8,7 +8,7 @@ use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\ProjectController;
 
 Route::get('/', function () {
-    return 'It works!';
+    return redirect()->route('login');
 });
 
 Route::get('/dashboard', function () {
