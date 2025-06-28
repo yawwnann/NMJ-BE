@@ -16,8 +16,6 @@ class Project extends Model
         'category',
         'duration',
         'status',
-        'image_url',
-        'cloudflare_image_id',
         'construction_category',
         'start_date',
         'end_date',
@@ -29,6 +27,44 @@ class Project extends Model
         'is_active' => 'boolean',
     ];
 
+    // Relationships
+    public function images()
+    {
+        return $this->hasMany(ProjectImage::class);
+    }
+
+    public function mainImage()
+    {
+        return $this->hasOne(ProjectImage::class)->where('type', 'main');
+    }
+
+    public function workImages()
+    {
+        return $this->hasMany(ProjectImage::class)->where('type', 'work');
+    }
+
+    public function galleryImages()
+    {
+        return $this->hasMany(ProjectImage::class)->where('type', 'gallery');
+    }
+
+    // Helper methods
+    public function getMainImageUrl()
+    {
+        return $this->mainImage?->image_url;
+    }
+
+    public function getWorkImages()
+    {
+        return $this->workImages()->active()->ordered()->get();
+    }
+
+    public function getGalleryImages()
+    {
+        return $this->galleryImages()->active()->ordered()->get();
+    }
+
+    // Scopes
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

@@ -29,6 +29,7 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->name('admin.')->group(
     Route::resource('service', ServiceController::class)->except(['show']);
     Route::resource('team', TeamController::class)->except(['show']);
     Route::resource('project', ProjectController::class)->except(['show']);
+    Route::delete('project-image/{image}', [ProjectController::class, 'deleteImage'])->name('project.image.delete');
     // Route CRUD untuk Hero, Service, Team, Project akan ditambahkan di sini
 });
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Models\ProjectImage;
 use App\Services\CloudinaryImageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +25,7 @@ class ProjectController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Project::active();
+            $query = Project::active()->with(['mainImage', 'workImages', 'galleryImages']);
 
             // Filter by status
             if ($request->has('status')) {
@@ -60,7 +61,30 @@ class ProjectController extends Controller
                     'is_ongoing' => $project->is_ongoing,
                     'status' => $project->status,
                     'is_active' => $project->is_active,
-                    'image_url' => $project->image_url,
+                    'main_image' => $project->mainImage ? [
+                        'id' => $project->mainImage->id,
+                        'url' => $project->mainImage->image_url,
+                        'alt_text' => $project->mainImage->alt_text,
+                        'caption' => $project->mainImage->caption
+                    ] : null,
+                    'work_images' => $project->workImages->map(function ($image) {
+                        return [
+                            'id' => $image->id,
+                            'url' => $image->image_url,
+                            'alt_text' => $image->alt_text,
+                            'caption' => $image->caption,
+                            'sort_order' => $image->sort_order
+                        ];
+                    }),
+                    'gallery_images' => $project->galleryImages->map(function ($image) {
+                        return [
+                            'id' => $image->id,
+                            'url' => $image->image_url,
+                            'alt_text' => $image->alt_text,
+                            'caption' => $image->caption,
+                            'sort_order' => $image->sort_order
+                        ];
+                    }),
                     'duration' => $durasi,
                     'created_at' => $project->created_at,
                     'updated_at' => $project->updated_at,
@@ -96,7 +120,9 @@ class ProjectController extends Controller
                 'end_date' => 'nullable|date|after_or_equal:start_date',
                 'is_ongoing' => 'boolean',
                 'status' => 'required|in:planning,in_progress,completed,on_hold,cancelled',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+                'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+                'work_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+                'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
                 'is_active' => 'boolean'
             ]);
 
@@ -115,26 +141,37 @@ class ProjectController extends Controller
                 $data['end_date'] = null;
             }
 
-            // Handle image upload to Cloudinary
-            if ($request->hasFile('image')) {
-                $file = $request->file('image');
-                $result = $this->cloudinaryService->uploadImage($file);
-                if ($result && isset($result['url'])) {
-                    $data['image_url'] = $result['url'];
-                    $data['cloudinary_public_id'] = $result['public_id'] ?? null;
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Failed to upload image to Cloudinary'
-                    ], 500);
+            $project = Project::create($data);
+
+            // Handle main image
+            if ($request->hasFile('main_image')) {
+                $this->uploadProjectImage($project, $request->file('main_image'), 'main');
+            }
+
+            // Handle work images
+            if ($request->hasFile('work_images')) {
+                foreach ($request->file('work_images') as $index => $file) {
+                    if ($file && $file->isValid()) {
+                        $this->uploadProjectImage($project, $file, 'work', $index);
+                    }
                 }
             }
 
-            $project = Project::create($data);
+            // Handle gallery images
+            if ($request->hasFile('gallery_images')) {
+                foreach ($request->file('gallery_images') as $index => $file) {
+                    if ($file && $file->isValid()) {
+                        $this->uploadProjectImage($project, $file, 'gallery', $index);
+                    }
+                }
+            }
+
+            // Load the project with images for response
+            $project->load(['mainImage', 'workImages', 'galleryImages']);
 
             return response()->json([
                 'success' => true,
-                'data' => $project,
+                'data' => $this->formatProjectData($project),
                 'message' => 'Project created successfully'
             ], 201);
 
@@ -153,36 +190,11 @@ class ProjectController extends Controller
     public function show(Project $project): JsonResponse
     {
         try {
-            $start = $project->start_date ? \Carbon\Carbon::parse($project->start_date) : null;
-            $end = ($project->is_ongoing || !$project->end_date) ? null : \Carbon\Carbon::parse($project->end_date);
-            $durasi = null;
-            if ($start && $end) {
-                $days = $start->diffInDays($end) + 1;
-                $months = floor($days / 30);
-                $durasi = $months > 0 ? $months . ' bulan ' . ($days % 30) . ' hari' : $days . ' hari';
-            } elseif ($start && $project->is_ongoing) {
-                $days = $start->diffInDays(now()) + 1;
-                $months = floor($days / 30);
-                $durasi = $months > 0 ? $months . ' bulan ' . ($days % 30) . ' hari' : $days . ' hari';
-            }
+            $project->load(['mainImage', 'workImages', 'galleryImages']);
+
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'id' => $project->id,
-                    'title' => $project->title,
-                    'location' => $project->location,
-                    'description' => $project->description,
-                    'construction_category' => $project->construction_category,
-                    'start_date' => $project->start_date,
-                    'end_date' => $project->end_date,
-                    'is_ongoing' => $project->is_ongoing,
-                    'status' => $project->status,
-                    'is_active' => $project->is_active,
-                    'image_url' => $project->image_url,
-                    'duration' => $durasi,
-                    'created_at' => $project->created_at,
-                    'updated_at' => $project->updated_at,
-                ],
+                'data' => $this->formatProjectData($project),
                 'message' => 'Project retrieved successfully'
             ]);
         } catch (\Exception $e) {
@@ -201,15 +213,17 @@ class ProjectController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'title' => 'sometimes|required|string|max:255',
-                'location' => 'sometimes|required|string|max:255',
-                'description' => 'sometimes|required|string',
-                'construction_category' => 'sometimes|required|string|max:255',
-                'start_date' => 'sometimes|required|date',
+                'title' => 'required|string|max:255',
+                'location' => 'required|string|max:255',
+                'description' => 'required|string',
+                'construction_category' => 'required|string|max:255',
+                'start_date' => 'required|date',
                 'end_date' => 'nullable|date|after_or_equal:start_date',
                 'is_ongoing' => 'boolean',
-                'status' => 'sometimes|required|in:planning,in_progress,completed,on_hold,cancelled',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+                'status' => 'required|in:planning,in_progress,completed,on_hold,cancelled',
+                'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+                'work_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+                'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
                 'is_active' => 'boolean'
             ]);
 
@@ -222,34 +236,45 @@ class ProjectController extends Controller
             }
 
             $data = $request->only(['title', 'location', 'description', 'construction_category', 'start_date', 'end_date', 'status', 'is_active']);
-            $data['is_ongoing'] = $request->boolean('is_ongoing', $project->is_ongoing);
-            if (isset($data['is_active'])) {
-                $data['is_active'] = $request->boolean('is_active');
-            }
+            $data['is_ongoing'] = $request->boolean('is_ongoing', false);
+            $data['is_active'] = $request->boolean('is_active', true);
             if ($data['is_ongoing']) {
                 $data['end_date'] = null;
             }
 
-            // Handle image upload to Cloudinary
-            if ($request->hasFile('image')) {
-                $file = $request->file('image');
-                $result = $this->cloudinaryService->uploadImage($file);
-                if ($result && isset($result['url'])) {
-                    $data['image_url'] = $result['url'];
-                    $data['cloudinary_public_id'] = $result['public_id'] ?? null;
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Failed to upload image to Cloudinary'
-                    ], 500);
+            $project->update($data);
+
+            // Handle main image
+            if ($request->hasFile('main_image')) {
+                // Delete existing main image
+                $project->mainImage?->delete();
+                $this->uploadProjectImage($project, $request->file('main_image'), 'main');
+            }
+
+            // Handle work images
+            if ($request->hasFile('work_images')) {
+                foreach ($request->file('work_images') as $index => $file) {
+                    if ($file && $file->isValid()) {
+                        $this->uploadProjectImage($project, $file, 'work', $index);
+                    }
                 }
             }
 
-            $project->update($data);
+            // Handle gallery images
+            if ($request->hasFile('gallery_images')) {
+                foreach ($request->file('gallery_images') as $index => $file) {
+                    if ($file && $file->isValid()) {
+                        $this->uploadProjectImage($project, $file, 'gallery', $index);
+                    }
+                }
+            }
+
+            // Load the project with images for response
+            $project->load(['mainImage', 'workImages', 'galleryImages']);
 
             return response()->json([
                 'success' => true,
-                'data' => $project,
+                'data' => $this->formatProjectData($project),
                 'message' => 'Project updated successfully'
             ]);
 
@@ -268,13 +293,14 @@ class ProjectController extends Controller
     public function destroy(Project $project): JsonResponse
     {
         try {
+            // Delete all associated images
+            $project->images()->delete();
             $project->delete();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Project deleted successfully'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -290,18 +316,29 @@ class ProjectController extends Controller
     public function statistics(): JsonResponse
     {
         try {
-            $stats = [
-                'total' => Project::active()->count(),
-                'planning' => Project::active()->byStatus('planning')->count(),
-                'in_progress' => Project::active()->byStatus('in_progress')->count(),
-                'completed' => Project::active()->byStatus('completed')->count(),
-                'on_hold' => Project::active()->byStatus('on_hold')->count(),
-                'cancelled' => Project::active()->byStatus('cancelled')->count(),
-            ];
+            $totalProjects = Project::count();
+            $activeProjects = Project::active()->count();
+            $completedProjects = Project::byStatus('completed')->count();
+            $ongoingProjects = Project::where('is_ongoing', true)->count();
+
+            $categoryStats = Project::selectRaw('construction_category, COUNT(*) as count')
+                ->groupBy('construction_category')
+                ->get();
+
+            $statusStats = Project::selectRaw('status, COUNT(*) as count')
+                ->groupBy('status')
+                ->get();
 
             return response()->json([
                 'success' => true,
-                'data' => $stats,
+                'data' => [
+                    'total_projects' => $totalProjects,
+                    'active_projects' => $activeProjects,
+                    'completed_projects' => $completedProjects,
+                    'ongoing_projects' => $ongoingProjects,
+                    'category_statistics' => $categoryStats,
+                    'status_statistics' => $statusStats
+                ],
                 'message' => 'Project statistics retrieved successfully'
             ]);
         } catch (\Exception $e) {
@@ -311,5 +348,105 @@ class ProjectController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Delete a specific project image
+     */
+    public function deleteImage(ProjectImage $image): JsonResponse
+    {
+        try {
+            $image->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Image deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete image',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Upload project image helper method
+     */
+    private function uploadProjectImage($project, $file, $type, $sortOrder = 0)
+    {
+        $result = $this->cloudinaryService->uploadImage($file);
+
+        if ($result && isset($result['url'])) {
+            ProjectImage::create([
+                'project_id' => $project->id,
+                'image_url' => $result['url'],
+                'cloudinary_public_id' => $result['public_id'] ?? null,
+                'type' => $type,
+                'sort_order' => $sortOrder,
+                'alt_text' => $file->getClientOriginalName(),
+                'is_active' => true
+            ]);
+        }
+    }
+
+    /**
+     * Format project data for API response
+     */
+    private function formatProjectData($project)
+    {
+        $start = $project->start_date ? \Carbon\Carbon::parse($project->start_date) : null;
+        $end = ($project->is_ongoing || !$project->end_date) ? null : \Carbon\Carbon::parse($project->end_date);
+        $durasi = null;
+        if ($start && $end) {
+            $days = $start->diffInDays($end) + 1;
+            $months = floor($days / 30);
+            $durasi = $months > 0 ? $months . ' bulan ' . ($days % 30) . ' hari' : $days . ' hari';
+        } elseif ($start && $project->is_ongoing) {
+            $days = $start->diffInDays(now()) + 1;
+            $months = floor($days / 30);
+            $durasi = $months > 0 ? $months . ' bulan ' . ($days % 30) . ' hari' : $days . ' hari';
+        }
+
+        return [
+            'id' => $project->id,
+            'title' => $project->title,
+            'location' => $project->location,
+            'description' => $project->description,
+            'construction_category' => $project->construction_category,
+            'start_date' => $project->start_date,
+            'end_date' => $project->end_date,
+            'is_ongoing' => $project->is_ongoing,
+            'status' => $project->status,
+            'is_active' => $project->is_active,
+            'main_image' => $project->mainImage ? [
+                'id' => $project->mainImage->id,
+                'url' => $project->mainImage->image_url,
+                'alt_text' => $project->mainImage->alt_text,
+                'caption' => $project->mainImage->caption
+            ] : null,
+            'work_images' => $project->workImages->map(function ($image) {
+                return [
+                    'id' => $image->id,
+                    'url' => $image->image_url,
+                    'alt_text' => $image->alt_text,
+                    'caption' => $image->caption,
+                    'sort_order' => $image->sort_order
+                ];
+            }),
+            'gallery_images' => $project->galleryImages->map(function ($image) {
+                return [
+                    'id' => $image->id,
+                    'url' => $image->image_url,
+                    'alt_text' => $image->alt_text,
+                    'caption' => $image->caption,
+                    'sort_order' => $image->sort_order
+                ];
+            }),
+            'duration' => $durasi,
+            'created_at' => $project->created_at,
+            'updated_at' => $project->updated_at,
+        ];
     }
 }

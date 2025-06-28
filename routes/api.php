@@ -58,3 +58,8 @@ Route::prefix('projects')->group(function () {
     Route::put('/{project}', [ProjectController::class, 'update']);
     Route::delete('/{project}', [ProjectController::class, 'destroy']);
 });
+
+// Project Image Routes
+Route::prefix('project-images')->group(function () {
+    Route::delete('/{image}', [ProjectController::class, 'deleteImage']);
+});
