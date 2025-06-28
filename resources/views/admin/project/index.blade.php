@@ -53,8 +53,9 @@
                             <span class="capitalize">{{ str_replace('_', ' ', $project->status) }}</span>
                         </td>
                         <td class="px-4 py-2">
-                            @if($project->image_url)
-                                <img src="{{ $project->image_url }}" alt="Gambar" class="h-12 w-20 object-cover rounded shadow">
+                            @if($project->mainImage)
+                                <img src="{{ $project->mainImage->image_url }}" alt="Gambar Utama"
+                                    class="h-12 w-20 object-cover rounded shadow">
                             @else
                                 <span class="text-gray-400">-</span>
                             @endif

@@ -21,9 +21,6 @@ return new class extends Migration {
             $table->integer('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-
-            // Ensure only one main image per project
-            $table->unique(['project_id', 'type'], 'unique_project_image_type');
         });
     }
 
