@@ -100,21 +100,21 @@
 
                 <!-- Date Range -->
                 <div x-data="{
-                        start: '',
-                        end: '',
-                        ongoing: false,
-                        get duration() {
-                            if (!this.start) return '';
-                            if (this.ongoing || !this.end) return '';
-                            const start = new Date(this.start);
-                            const end = new Date(this.end);
-                            if (isNaN(start) || isNaN(end) || end < start) return '';
-                            const diff = end - start;
-                            const days = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
-                            const months = Math.floor(days / 30);
-                            return months > 0 ? `${months} bulan ${days % 30} hari` : `${days} hari`;
-                        }
-                    }" x-init="start = $refs.start.value; end = $refs.end.value; ongoing = $refs.ongoing.checked">
+                            start: '',
+                            end: '',
+                            ongoing: false,
+                            get duration() {
+                                if (!this.start) return '';
+                                if (this.ongoing || !this.end) return '';
+                                const start = new Date(this.start);
+                                const end = new Date(this.end);
+                                if (isNaN(start) || isNaN(end) || end < start) return '';
+                                const diff = end - start;
+                                const days = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+                                const months = Math.floor(days / 30);
+                                return months > 0 ? `${months} bulan ${days % 30} hari` : `${days} hari`;
+                            }
+                        }" x-init="start = $refs.start.value; end = $refs.end.value; ongoing = $refs.ongoing.checked">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-semibold mb-1 text-blue-900" for="start_date">Tanggal
@@ -170,12 +170,16 @@
 
                     <!-- Gallery Images -->
                     <div class="mb-6">
-                        <label class="block text-xs font-semibold mb-2 text-blue-900" for="gallery_images">
+                        <label class="block text-xs font-semibold mb-2 text-blue-900">
                             <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">Galeri Gambar</span>
                             <span class="text-gray-600 ml-2">(Gambar tambahan untuk galeri)</span>
                         </label>
-                        <input type="file" name="gallery_images[]" id="gallery_images" accept="image/*" multiple
-                            class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
+                        <div id="gallery-inputs">
+                            <input type="file" name="gallery_images[]" accept="image/*"
+                                class="w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 mb-2">
+                        </div>
+                        <button type="button" onclick="addGalleryInput()" class="text-blue-700 underline text-xs mb-2">+
+                            Tambahkan Gambar</button>
                         <p class="text-xs text-gray-500 mt-1">Gambar tambahan untuk galeri project</p>
                     </div>
                 </div>
@@ -198,4 +202,15 @@
             </form>
         </div>
     </div>
+    <script>
+        function addGalleryInput() {
+            const container=document.getElementById('gallery-inputs');
+            const input=document.createElement('input');
+            input.type='file';
+            input.name='gallery_images[]';
+            input.accept='image/*';
+            input.className='w-full border border-blue-900 bg-white text-blue-900 rounded-lg px-3 py-2 mb-2';
+            container.appendChild(input);
+        }
+    </script>
 @endsection
