@@ -4,6 +4,10 @@
     <div class="flex justify-center items-start min-h-screen bg-gray-50">
         <div class="w-full max-w-4xl bg-white rounded-2xl shadow-lg p-8 mt-4">
             <h2 class="text-2xl font-bold mb-6 text-blue-900">Edit Project</h2>
+            <div class="flex justify-end mb-4">
+                <button type="submit"
+                    class="bg-blue-800 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow text-sm">Update Project</button>
+            </div>
             @if ($errors->any())
                 <div class="mb-4 p-3 bg-red-100 text-red-800 rounded shadow">
                     <ul class="list-disc pl-5 text-xs">
@@ -295,9 +299,6 @@
                 <div class="flex justify-between items-center mt-6">
                     <a href="{{ route('admin.project.index') }}" class="text-blue-700 hover:underline text-sm">&larr;
                         Kembali</a>
-                    <button type="submit"
-                        class="bg-blue-800 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow text-sm">Update
-                        Project</button>
                 </div>
             </form>
         </div>
